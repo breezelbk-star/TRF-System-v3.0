@@ -34,13 +34,13 @@ Status: Active
 
 Market Score
 
-30%
+20%
 
 ---
 
 Sector Score
 
-40%
+50%
 
 ---
 
