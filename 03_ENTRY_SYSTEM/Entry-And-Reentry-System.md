@@ -471,3 +471,31 @@ MA30附近
 8. 修复过程必须分级回补。
 9. 趋势比价格更重要。
 10. 市场永远比个人聪明。
+
+---
+
+# Entry Permission
+
+建仓必须满足：
+
+Market = GREEN
+
+Sector = S1 或 S2
+
+Stock = A
+
+否则禁止建立主仓。
+
+---
+
+回补必须满足：
+
+Market ≠ RED
+
+Sector ≠ S4
+
+Stock ≠ D
+
+Stock ≠ E
+
+否则禁止回补。
