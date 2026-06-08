@@ -1,22 +1,22 @@
 # TRF v3.0 - State Mapping Table
 
-Version: RC1
+Version: RC1 Final
 Author: Jimmy Li + GPT
 Status: Core Mapping
 
 ---
 
-# 0. 文件作用
+# 0. 文件定位
 
-本文件是：
+本文件负责：
 
-TRF状态机
+State
 
 ↓
 
-QMT执行系统
+Execution
 
-之间的转换表。
+之间的映射关系。
 
 ---
 
@@ -46,177 +46,66 @@ Risk Level
 
 ---
 
-# 1. 最高原则
-
-最终仓位：
-
-取最小值原则
+QMT未来直接读取本文件。
 
 ---
 
-例如：
+# 1. 状态来源
 
-Market：
+状态定义统一由：
 
-GREEN
+00_ARCHITECTURE/
+TRF-Master-State-Machine.md
 
-80%
-
----
-
-Sector：
-
-S2
-
-80%
+负责。
 
 ---
 
-Stock：
+本文件不负责定义状态。
 
-A
-
-80%
-
----
-
-最终：
-
-80%
+只负责映射。
 
 ---
 
 # 2. Market Mapping
 
-GREEN
-
-允许仓位：
-
-80%
-
-风险等级：
-
-LOW
-
----
-
-YELLOW
-
-允许仓位：
-
-50%
-
-风险等级：
-
-MEDIUM
-
----
-
-RED
-
-允许仓位：
-
-20%
-
-风险等级：
-
-HIGH
+| State | Position Limit | Risk |
+|---------|---------|---------|
+| GREEN | 80% | LOW |
+| YELLOW | 50% | MEDIUM |
+| RED | 20% | HIGH |
 
 ---
 
 # 3. Sector Mapping
 
-S0
-
-20%
-
-观察
-
----
-
-S1
-
-50%
-
-建仓
-
----
-
-S2
-
-80%
-
-主升
-
----
-
-S3
-
-50%
-
-高潮
-
----
-
-S4
-
-20%
-
-退潮
+| State | Position Limit | Description |
+|---------|---------|---------|
+| S0 | 20% | 萌芽 |
+| S1 | 50% | 启动 |
+| S2 | 80% | 主升 |
+| S3 | 50% | 高潮 |
+| S4 | 20% | 退潮 |
 
 ---
 
 # 4. Stock Mapping
 
-A
-
-80%
-
-趋势健康
-
----
-
-B
-
-70%
-
-预警
+| State | Position Limit | Description |
+|---------|---------|---------|
+| A | 80% | 趋势健康 |
+| B | 70% | MA5预警 |
+| C | 50% | MA10转弱 |
+| D | 30% | MA20防守 |
+| E | 10% | MA30退出观察 |
 
 ---
 
-C
+# 5. 仓位计算规则
 
-50%
+最终允许仓位：
 
-转弱
-
----
-
-D
-
-30%
-
-防守
-
----
-
-E
-
-10%
-
-退出观察
-
----
-
-# 5. 仓位计算公式
-
-Allowed Position
-
-=
-
-MIN
-
-(
+MIN(
 
 Market Limit,
 
@@ -228,55 +117,157 @@ Stock Limit
 
 ---
 
-# 6. 执行动作映射
+示例：
 
-GREEN + S2 + A
-
-↓
+Market = GREEN
 
 80%
 
-↓
+---
 
-Allow Buy = YES
+Sector = S2
 
-Allow Add = YES
-
-Allow Reentry = YES
-
-Allow Rolling = YES
+80%
 
 ---
 
-GREEN + S3 + A
-
-↓
+Stock = C
 
 50%
 
-↓
+---
 
-Allow Buy = NO
+最终允许仓位：
 
-Allow Add = NO
-
-Allow Rolling = YES
-
-↓
-
-优先卖滚动仓
+50%
 
 ---
 
-GREEN + S2 + B
+示例：
 
-↓
+Market = YELLOW
 
-70%
+50%
 
-↓
+---
+
+Sector = S2
+
+80%
+
+---
+
+Stock = A
+
+80%
+
+---
+
+最终允许仓位：
+
+50%
+
+---
+
+# 6. Buy Permission
+
+允许建仓：
+
+Market = GREEN
+
+AND
+
+Sector = S1 或 S2
+
+AND
+
+Stock = A
+
+---
+
+否则：
+
+Allow Buy = NO
+
+---
+
+# 7. Add Permission
+
+允许加仓：
+
+Market = GREEN
+
+AND
+
+Sector = S2
+
+AND
+
+Stock = A
+
+---
+
+否则：
 
 Allow Add = NO
+
+---
+
+# 8. Reentry Permission
+
+允许回补：
+
+Market ≠ RED
+
+AND
+
+Sector ≠ S4
+
+AND
+
+Stock ≠ D
+
+AND
+
+Stock ≠ E
+
+---
+
+否则：
+
+Allow Reentry = NO
+
+---
+
+# 9. Rolling Permission
+
+允许滚动仓：
+
+Market = GREEN
+
+AND
+
+Sector = S2
+
+AND
+
+Stock = A 或 B
+
+---
+
+否则：
+
+Allow Rolling = NO
+
+---
+
+# 10. Exit Priority
+
+Stock = B
+
+↓
+
+预警
 
 ↓
 
@@ -284,277 +275,105 @@ Allow Add = NO
 
 ---
 
-GREEN + S2 + C
+Stock = C
 
 ↓
 
-50%
+减仓至50%
+
+---
+
+Stock = D
 
 ↓
 
-Allow Add = NO
+减仓至30%
+
+---
+
+Stock = E
+
+↓
+
+减仓至10%
+
+---
+
+# 11. Sector Priority
+
+S2
+
+↓
+
+允许主仓
+
+---
+
+S3
 
 ↓
 
 允许减仓
 
----
-
-GREEN + S2 + D
-
-↓
-
-30%
-
-↓
-
-禁止补仓
-
-↓
-
-滚动仓清零
+禁止追高
 
 ---
-
-GREEN + S2 + E
-
-↓
-
-10%
-
-↓
-
-观察仓
-
-↓
-
-禁止交易
-
----
-
-# 7. YELLOW市场
-
-YELLOW + S2 + A
-
-↓
-
-50%
-
-↓
-
-允许试仓
-
-↓
-
-禁止满仓
-
----
-
-YELLOW + S3 + A
-
-↓
-
-50%
-
-↓
-
-减仓优先
-
----
-
-YELLOW + S4 + 任意
-
-↓
-
-20%
-
-↓
-
-观察
-
----
-
-# 8. RED市场
-
-RED + 任意 + 任意
-
-↓
-
-20%
-
-↓
-
-防守优先
-
-↓
-
-现金优先
-
-↓
-
-禁止重仓
-
----
-
-# 9. 回补权限
-
-允许：
-
-GREEN
-
-+
-
-S2
-
-+
-
-A
-
----
-
-允许：
-
-GREEN
-
-+
-
-S1
-
-+
-
-A
-
----
-
-禁止：
-
-RED
-
----
-
-禁止：
 
 S4
 
----
+↓
 
-禁止：
+禁止主仓
 
-D
-
----
-
-禁止：
-
-E
+禁止回补
 
 ---
 
-# 10. 滚动仓权限
+# 12. Market Priority
 
-允许：
+RED
 
-GREEN
-
-+
-
-S2
-
-+
-
-A
+优先级最高
 
 ---
 
-允许：
+当：
 
-GREEN
-
-+
-
-S2
-
-+
-
-B
+Market = RED
 
 ---
 
-禁止：
+无论：
 
-C
+Sector
 
-D
+Stock
 
-E
-
----
-
-# 11. 龙头特殊规则
-
-龙头股：
-
-允许提前试仓
+状态如何
 
 ---
 
-条件：
+最终允许仓位：
 
-S2
-
-+
-
-A
-
-+
-
-靠近MA30
+20%
 
 ---
 
-允许：
-
-总资产10%
-
-试仓
+现金优先。
 
 ---
 
-普通股：
+# 13. QMT Output
 
-必须重新站回MA20
+系统输出：
 
----
+Current Market State
 
-# 12. TRF最终决策树
+Current Sector State
 
-Step 1
+Current Stock State
 
-判断Market
-
----
-
-Step 2
-
-判断Sector
-
----
-
-Step 3
-
-判断Stock
-
----
-
-Step 4
-
-计算Allowed Position
-
----
-
-Step 5
-
-判断：
+Allowed Position
 
 Allow Buy
 
@@ -564,114 +383,36 @@ Allow Reentry
 
 Allow Rolling
 
----
-
-Step 6
-
-执行QMT
+Risk Level
 
 ---
 
-# 13. 拓荆科技案例
-
-阶段1
-
-GREEN
-
-S2
-
-A
-
-↓
-
-80%
-
-↓
-
-主仓
+QMT只执行输出结果。
 
 ---
 
-阶段2
+# 14. Future Upgrade
 
-GREEN
+Stock State
 
-S3
+未来升级方向：
 
-A
+A = 趋势健康
 
-↓
+B = 短期转弱
 
-50%
+C = 结构转弱
 
-↓
+D = 趋势破坏
 
-卖滚动仓
-
----
-
-阶段3
-
-GREEN
-
-S3
-
-C
-
-↓
-
-50%
-
-↓
-
-禁止补仓
+E = 退出观察
 
 ---
 
-阶段4
-
-GREEN
-
-S4
-
-D
-
-↓
-
-20%-30%
-
-↓
-
-防守
+均线不再作为唯一判断依据。
 
 ---
 
-阶段5
+Version:
 
-GREEN
-
-S4
-
-E
-
-↓
-
-10%
-
-↓
-
-观察仓
-
----
-
-# 最终铁律
-
-市场决定仓位。
-
-板块决定方向。
-
-个股决定执行。
-
-状态机决定动作。
-
-QMT只执行结果。
+TRF v3.1 Planned
